@@ -17,7 +17,7 @@ Map<String, dynamic> sampleResponse() => {
   },
   'daily': <String, dynamic>{
     'time': List.generate(
-      7,
+      16,
       (i) => '2026-11-${(6 + i).toString().padLeft(2, '0')}',
     ),
     'temperature_2m_min': [2, 3, 1, -1, 0, 4, 5],
@@ -35,7 +35,7 @@ void main() {
       client: MockClient((request) async {
         expect(request.url.host, 'api.open-meteo.com');
         expect(request.url.queryParameters['timezone'], 'Europe/Warsaw');
-        expect(request.url.queryParameters['forecast_days'], '7');
+        expect(request.url.queryParameters['forecast_days'], '16');
         expect(request.url.queryParameters['latitude'], '52.2297');
         expect(request.url.queryParameters['wind_speed_unit'], 'kmh');
         return http.Response(jsonEncode(sampleResponse()), 200);
@@ -45,7 +45,7 @@ void main() {
     final report = await source.fetch();
     expect(report.temperature, 8.3);
     expect(report.time.hour, 12);
-    expect(report.days.length, 7);
+    expect(report.days.length, 16);
     expect(report.days[3].low, -1);
     expect(report.days[1].rainChance, 80);
   });

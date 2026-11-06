@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:warsaw_weather/main.dart';
 import 'package:warsaw_weather/weather.dart';
+import 'package:warsaw_weather/cities.dart';
 
 import 'weather_test.dart' show sampleResponse;
 
@@ -11,7 +12,7 @@ class FakeWeatherSource implements WeatherSource {
   int requests = 0;
   bool fail = false;
   @override
-  Future<WeatherReport> fetch() async {
+  Future<WeatherReport> fetch({WeatherCity city = warsaw}) async {
     requests++;
     if (fail) throw const WeatherException('Brak połączenia z internetem.');
     return WeatherReport.fromJson(sampleResponse());
@@ -25,7 +26,7 @@ class PendingSource implements WeatherSource {
   final completer = Completer<WeatherReport>();
   int requests = 0;
   @override
-  Future<WeatherReport> fetch() {
+  Future<WeatherReport> fetch({WeatherCity city = warsaw}) {
     requests++;
     return completer.future;
   }
@@ -41,9 +42,9 @@ void main() {
       addTearDown(() => tester.binding.setSurfaceSize(null));
       await tester.pumpWidget(WeatherApp(source: FakeWeatherSource()));
       await tester.pumpAndSettle();
-      expect(find.text('Warszawa'), findsOneWidget);
-      await tester.scrollUntilVisible(find.text('Najbliższe 7 dni'), 250);
-      expect(find.text('Najbliższe 7 dni'), findsOneWidget);
+      expect(find.byKey(const Key('city-heading')), findsOneWidget);
+      await tester.scrollUntilVisible(find.text('Najbliższe 16 dni'), 250);
+      expect(find.text('Najbliższe 16 dni'), findsOneWidget);
       expect(tester.takeException(), isNull);
       await tester.scrollUntilVisible(
         find.text('Dane: Open-Meteo · CC BY 4.0 ↗'),
@@ -59,9 +60,11 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Nie możemy sprawdzić pogody'), findsOneWidget);
     source.fail = false;
+    await tester.ensureVisible(find.text('Spróbuj ponownie'));
     await tester.tap(find.text('Spróbuj ponownie'));
     await tester.pumpAndSettle();
-    expect(find.text('TERAZ W STOLICY'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('POGODA TERAZ'), 250);
+    expect(find.text('POGODA TERAZ'), findsOneWidget);
     expect(source.requests, 2);
   });
 
@@ -76,7 +79,8 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Nie udało się odświeżyć prognozy'), findsOneWidget);
     expect(find.textContaining('mogą być nieaktualne'), findsOneWidget);
-    expect(find.text('TERAZ W STOLICY'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('POGODA TERAZ'), 250);
+    expect(find.text('POGODA TERAZ'), findsOneWidget);
   });
 
   testWidgets('loading disables duplicate fetch and disposal is safe', (
@@ -84,7 +88,7 @@ void main() {
   ) async {
     final source = PendingSource();
     await tester.pumpWidget(WeatherApp(source: source));
-    expect(find.text('Pobieramy pogodę dla Warszawy…'), findsOneWidget);
+    expect(find.text('Pobieramy pogodę: Warszawa…'), findsOneWidget);
     await tester.tap(find.byTooltip('Odśwież pogodę'));
     expect(source.requests, 1);
     await tester.pumpWidget(const SizedBox());

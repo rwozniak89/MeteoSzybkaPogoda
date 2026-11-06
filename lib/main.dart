@@ -3,6 +3,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'weather.dart';
+import 'cities.dart';
 
 void main() => runApp(const WeatherApp());
 
@@ -17,7 +18,7 @@ class WeatherApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => MaterialApp(
-    title: 'Warszawa • Pogoda',
+    title: 'Pogoda • Miasta wojewódzkie',
     debugShowCheckedModeBanner: false,
     locale: const Locale('pl'),
     supportedLocales: const [Locale('pl')],
@@ -47,6 +48,9 @@ class _WeatherPageState extends State<WeatherPage> {
   WeatherReport? _report;
   String? _error;
   bool _loading = false;
+  WeatherCity _city = warsaw;
+  DateTime? _selectedDate;
+  int _requestId = 0;
 
   @override
   void initState() {
@@ -55,17 +59,25 @@ class _WeatherPageState extends State<WeatherPage> {
     _load();
   }
 
-  Future<void> _load() async {
-    if (_loading) return;
+  Future<void> _load({bool cityChanged = false}) async {
+    if (_loading && !cityChanged) return;
+    final requestId = ++_requestId;
     setState(() {
       _loading = true;
       _error = null;
     });
     try {
-      final report = await _source.fetch();
-      if (mounted) setState(() => _report = report);
+      final report = await _source.fetch(city: _city);
+      if (mounted && requestId == _requestId) {
+        setState(() {
+          _report = report;
+          if (!report.days.any((d) => d.date == _selectedDate)) {
+            _selectedDate = report.days.first.date;
+          }
+        });
+      }
     } catch (error) {
-      if (mounted) {
+      if (mounted && requestId == _requestId) {
         setState(
           () => _error = error is WeatherException
               ? error.message
@@ -73,7 +85,35 @@ class _WeatherPageState extends State<WeatherPage> {
         );
       }
     } finally {
-      if (mounted) setState(() => _loading = false);
+      if (mounted && requestId == _requestId) setState(() => _loading = false);
+    }
+  }
+
+  void _changeCity(WeatherCity? city) {
+    if (city == null || city == _city) return;
+    setState(() {
+      _city = city;
+      _report = null;
+    });
+    _load(cityChanged: true);
+  }
+
+  Future<void> _pickDate() async {
+    final report = _report;
+    if (report == null || _loading) return;
+    final date = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate ?? report.days.first.date,
+      firstDate: report.days.first.date,
+      lastDate: report.days.last.date,
+      currentDate: report.days.first.date,
+      selectableDayPredicate: (date) => report.days.any((d) => d.date == date),
+      helpText: 'Wybierz dzień prognozy',
+      cancelText: 'Anuluj',
+      confirmText: 'Wybierz',
+    );
+    if (mounted && date != null && identical(report, _report)) {
+      setState(() => _selectedDate = date);
     }
   }
 
@@ -86,6 +126,9 @@ class _WeatherPageState extends State<WeatherPage> {
   @override
   Widget build(BuildContext context) {
     final report = _report;
+    final selectedDay = report?.days
+        .where((day) => day.date == _selectedDate)
+        .firstOrNull;
     return Scaffold(
       body: SafeArea(
         child: SelectionArea(
@@ -104,7 +147,7 @@ class _WeatherPageState extends State<WeatherPage> {
                       const SizedBox(width: 10),
                       const Expanded(
                         child: Text(
-                          'POGODA / WARSZAWA',
+                          'POGODA / POLSKA',
                           style: TextStyle(
                             fontWeight: FontWeight.w800,
                             fontSize: 12,
@@ -125,20 +168,82 @@ class _WeatherPageState extends State<WeatherPage> {
                     style: TextStyle(fontSize: 14, color: muted, height: 1.6),
                   ),
                   const SizedBox(height: 12),
-                  const Text(
-                    'Warszawa',
-                    style: TextStyle(
+                  Text(
+                    _city.name,
+                    key: const Key('city-heading'),
+                    style: const TextStyle(
                       fontSize: 48,
                       fontWeight: FontWeight.w700,
                       letterSpacing: -2,
                     ),
                   ),
                   const SizedBox(height: 8),
-                  const Text(
-                    'Polska  /  52,23° N, 21,01° E',
-                    style: TextStyle(color: muted),
+                  Text(
+                    'Polska  /  woj. ${_city.region}',
+                    style: const TextStyle(color: muted),
                   ),
                   const SizedBox(height: 28),
+                  DropdownButtonFormField<WeatherCity>(
+                    key: const Key('city-selector'),
+                    initialValue: _city,
+                    isExpanded: true,
+                    decoration: const InputDecoration(
+                      labelText: 'Miejscowość',
+                      border: OutlineInputBorder(),
+                    ),
+                    menuMaxHeight: 400,
+                    items: [
+                      for (final city in cities)
+                        DropdownMenuItem(
+                          value: city,
+                          child: Text(
+                            '${city.name} — ${city.region}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                    ],
+                    selectedItemBuilder: (context) => [
+                      for (final city in cities)
+                        Text(
+                          city.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                    ],
+                    onChanged: _changeCity,
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    '16 miast — po jednym na województwo (siedziby wojewodów).',
+                    style: TextStyle(color: muted, fontSize: 12),
+                  ),
+                  const SizedBox(height: 20),
+                  Wrap(
+                    spacing: 12,
+                    runSpacing: 8,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      OutlinedButton.icon(
+                        key: const Key('date-selector'),
+                        onPressed: report == null || _loading
+                            ? null
+                            : _pickDate,
+                        icon: const Icon(Icons.calendar_month_outlined),
+                        label: Text(
+                          _selectedDate == null
+                              ? 'Wybierz dzień'
+                              : 'Dzień: ${shortDate(_selectedDate!)}.${_selectedDate!.year}',
+                        ),
+                      ),
+                      if (report != null)
+                        Text(
+                          'Dostępne: ${shortDate(report.days.first.date)}–${shortDate(report.days.last.date)}',
+                          style: const TextStyle(color: muted, fontSize: 12),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
                   if (_loading) ...[
                     const LinearProgressIndicator(
                       minHeight: 3,
@@ -146,10 +251,10 @@ class _WeatherPageState extends State<WeatherPage> {
                     ),
                     const SizedBox(height: 16),
                     if (report == null)
-                      const Padding(
+                      Padding(
                         padding: EdgeInsets.symmetric(vertical: 60),
                         child: Center(
-                          child: Text('Pobieramy pogodę dla Warszawy…'),
+                          child: Text('Pobieramy pogodę: ${_city.name}…'),
                         ),
                       ),
                   ],
@@ -187,11 +292,15 @@ class _WeatherPageState extends State<WeatherPage> {
                     const SizedBox(height: 24),
                   ],
                   if (report != null) ...[
-                    _CurrentWeather(report: report),
+                    if (selectedDay != null)
+                      _SelectedForecast(day: selectedDay),
+                    const SizedBox(height: 24),
+                    if (_selectedDate == report.days.first.date)
+                      _CurrentWeather(report: report),
                     const SizedBox(height: 36),
-                    const Text(
-                      'Najbliższe 7 dni',
-                      style: TextStyle(
+                    Text(
+                      'Najbliższe ${report.days.length} dni',
+                      style: const TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.w700,
                         letterSpacing: -.5,
@@ -199,7 +308,7 @@ class _WeatherPageState extends State<WeatherPage> {
                     ),
                     const SizedBox(height: 6),
                     const Text(
-                      'Twój tydzień, dzień po dniu.',
+                      'Wybierz datę w kalendarzu lub kliknij dzień poniżej.',
                       style: TextStyle(color: muted),
                     ),
                     const SizedBox(height: 20),
@@ -222,7 +331,23 @@ class _WeatherPageState extends State<WeatherPage> {
                             for (var i = 0; i < report.days.length; i++)
                               SizedBox(
                                 width: width,
-                                child: _DayCard(day: report.days[i], index: i),
+                                child: Semantics(
+                                  selected:
+                                      report.days[i].date == _selectedDate,
+                                  child: InkWell(
+                                    key: ValueKey('day-$i'),
+                                    borderRadius: BorderRadius.circular(20),
+                                    onTap: () => setState(
+                                      () => _selectedDate = report.days[i].date,
+                                    ),
+                                    child: _DayCard(
+                                      day: report.days[i],
+                                      index: i,
+                                      selected:
+                                          report.days[i].date == _selectedDate,
+                                    ),
+                                  ),
+                                ),
                               ),
                           ],
                         );
@@ -292,6 +417,82 @@ class _WeatherPageState extends State<WeatherPage> {
   }
 }
 
+class _SelectedForecast extends StatelessWidget {
+  final ForecastDay day;
+  const _SelectedForecast({required this.day});
+
+  @override
+  Widget build(BuildContext context) => Container(
+    key: const Key('selected-forecast'),
+    padding: const EdgeInsets.all(24),
+    decoration: BoxDecoration(
+      color: accent,
+      borderRadius: BorderRadius.circular(24),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Prognoza na ${shortDate(day.date)}.${day.date.year}',
+          key: const Key('selected-date-heading'),
+          style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          weekdays[day.date.weekday - 1],
+          style: const TextStyle(color: muted),
+        ),
+        const SizedBox(height: 16),
+        Wrap(
+          spacing: 12,
+          runSpacing: 8,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            Icon(weatherIcon(day.code), size: 32),
+            Text(
+              weatherDescription(day.code),
+              style: const TextStyle(fontSize: 18),
+            ),
+          ],
+        ),
+        const SizedBox(height: 20),
+        Wrap(
+          spacing: 24,
+          runSpacing: 20,
+          children: [
+            for (final metric in <(String, String)>[
+              ('Maks. / min.', '${number(day.high)}° / ${number(day.low)}°'),
+              ('Szansa opadów', '${number(day.rainChance)}%'),
+              ('Suma opadów', '${number(day.rain, decimals: 1)} mm'),
+              ('Wiatr maks.', '${number(day.wind)} km/h'),
+            ])
+              SizedBox(
+                width: 140,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      metric.$1,
+                      style: const TextStyle(color: muted, fontSize: 12),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      metric.$2,
+                      style: const TextStyle(
+                        fontSize: 23,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+          ],
+        ),
+      ],
+    ),
+  );
+}
+
 class _CurrentWeather extends StatelessWidget {
   final WeatherReport report;
   const _CurrentWeather({required this.report});
@@ -311,7 +512,7 @@ class _CurrentWeather extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
-                'TERAZ W STOLICY',
+                'POGODA TERAZ',
                 style: TextStyle(
                   color: accent,
                   fontSize: 11,
@@ -434,14 +635,19 @@ class _Metric extends StatelessWidget {
 class _DayCard extends StatelessWidget {
   final ForecastDay day;
   final int index;
-  const _DayCard({required this.day, required this.index});
+  final bool selected;
+  const _DayCard({
+    required this.day,
+    required this.index,
+    required this.selected,
+  });
   @override
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 20),
     decoration: BoxDecoration(
-      color: index == 0 ? accent : Colors.white,
+      color: selected ? accent : Colors.white,
       borderRadius: BorderRadius.circular(20),
-      border: Border.all(color: index == 0 ? accent : const Color(0xFFE3E8DF)),
+      border: Border.all(color: selected ? ink : const Color(0xFFE3E8DF)),
     ),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,

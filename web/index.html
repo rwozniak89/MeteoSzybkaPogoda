@@ -4,13 +4,13 @@
   <base href="$FLUTTER_BASE_HREF">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Aktualna pogoda i prognoza na 7 dni dla Warszawy. Dane Open-Meteo.">
+  <meta name="description" content="Aktualna pogoda i kalendarz prognozy dla 16 miast wojewódzkich w Polsce. Dane Open-Meteo.">
   <meta name="theme-color" content="#203B36">
-  <title>Warszawa • Pogoda</title>
+  <title>Pogoda • Miasta wojewódzkie</title>
   <style>body { margin: 0; background: #f6f7f2; } #loading { font: 16px system-ui, sans-serif; color: #203b36; text-align: center; padding: 25vh 24px; }</style>
 </head>
 <body>
-  <div id="loading" role="status">Uruchamianie pogody dla Warszawy…</div>
+  <div id="loading" role="status">Uruchamianie prognozy pogody…</div>
   <script>window.addEventListener('flutter-first-frame', () => document.getElementById('loading')?.remove());</script>
   <script src="flutter_bootstrap.js" async></script>
   <noscript>Włącz JavaScript, aby zobaczyć prognozę pogody.</noscript>

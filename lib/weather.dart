@@ -3,6 +3,8 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
+import 'cities.dart';
+
 /// Times from this endpoint are wall-clock times in Europe/Warsaw.
 /// Keep them as local-looking values: do not convert them to the device zone.
 class WeatherReport {
@@ -85,7 +87,7 @@ class WeatherException implements Exception {
 }
 
 abstract interface class WeatherSource {
-  Future<WeatherReport> fetch();
+  Future<WeatherReport> fetch({WeatherCity city = warsaw});
   void close();
 }
 
@@ -93,25 +95,27 @@ class OpenMeteoService implements WeatherSource {
   final http.Client _client;
   OpenMeteoService({http.Client? client}) : _client = client ?? http.Client();
 
-  static final endpoint = Uri.https('api.open-meteo.com', '/v1/forecast', {
-    'latitude': '52.2297',
-    'longitude': '21.0122',
+  static Uri endpointFor(
+    WeatherCity city,
+  ) => Uri.https('api.open-meteo.com', '/v1/forecast', {
+    'latitude': city.latitude.toString(),
+    'longitude': city.longitude.toString(),
     'current':
         'temperature_2m,relative_humidity_2m,apparent_temperature,is_day,weather_code,wind_speed_10m',
     'daily':
         'weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,precipitation_sum,wind_speed_10m_max',
     'timezone': 'Europe/Warsaw',
-    'forecast_days': '7',
+    'forecast_days': '16',
     'temperature_unit': 'celsius',
     'wind_speed_unit': 'kmh',
     'precipitation_unit': 'mm',
   });
 
   @override
-  Future<WeatherReport> fetch() async {
+  Future<WeatherReport> fetch({WeatherCity city = warsaw}) async {
     try {
       final response = await _client
-          .get(endpoint)
+          .get(endpointFor(city))
           .timeout(const Duration(seconds: 15));
       if (response.statusCode == 429) {
         throw const WeatherException(
