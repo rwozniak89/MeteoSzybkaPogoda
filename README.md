@@ -1,23 +1,31 @@
-# Pogoda w miastach wojewódzkich
+# MeteoSzybkaPogoda
 
 Prosta aplikacja **Dart + Flutter Web**, po polsku, z bieżącą pogodą i prognozą na 16 dni. Układ dopasowuje się do komputera i telefonu.
 
+[Uruchom aplikację](https://warszawa-pogoda-radek.obszar-roboc-5333.chatgpt.site/)
+
+## Zrzuty ekranu
+
+### Komputer — 1440 px
+
+![MeteoSzybkaPogoda na komputerze](docs/screenshots/desktop.png)
+
+### Tablet — 768 px
+
+![MeteoSzybkaPogoda na tablecie](docs/screenshots/tablet.png)
+
+### Telefon — 390 px
+
+![MeteoSzybkaPogoda na telefonie](docs/screenshots/mobile.png)
+
 ## Uruchomienie
 
-Wymagany Flutter w kanale stable (Dart >= 3.8). Z katalogu `warsaw_weather`:
+Wymagany Flutter w kanale stable (Dart >= 3.8). Z katalogu repozytorium:
 
 ```powershell
 flutter pub get
 flutter run -d chrome
 ```
-
-W tym środowisku Flutter został pobrany lokalnie do `C:\Projects\Codex\.tools\flutter`. Można użyć przygotowanego skryptu:
-
-```powershell
-.\start.ps1
-```
-
-Skrypt uruchamia serwer pod adresem http://localhost:8080. Otwórz adres w przeglądarce. Zakończenie: Ctrl+C. Można wybrać inny port: `.\start.ps1 -Port 8090`.
 
 ## Funkcje
 
@@ -28,6 +36,7 @@ Skrypt uruchamia serwer pod adresem http://localhost:8080. Otwórz adres w przeg
 - Zachowanie ostatnio pobranych danych podczas nieudanego odświeżania z ostrzeżeniem, że mogą być nieaktualne. Dane nie są zapisywane pomiędzy uruchomieniami.
 - Obsługa brakujących pomiarów symbolem „—”.
 - Wybór jednego z 16 miast wojewódzkich, bez pytania o dostęp do lokalizacji użytkownika.
+- Wybór dnia z kalendarza w zakresie prognozy zwróconej przez API.
 
 ## Źródło danych
 
@@ -61,7 +70,7 @@ Projekt zawiera platformę web. Dodanie Androida wymaga wygenerowania plików pl
 
 ## Miasta i kalendarz
 
-Publiczna aplikacja: https://warszawa-pogoda-radek.obszar-roboc-5333.chatgpt.site
+Publiczna aplikacja: [warszawa-pogoda-radek.obszar-roboc-5333.chatgpt.site](https://warszawa-pogoda-radek.obszar-roboc-5333.chatgpt.site/)
 
 Lista zawiera po jednej siedzibie wojewody dla każdego z 16 województw: Białystok, Bydgoszcz, Gdańsk, Gorzów Wielkopolski, Katowice, Kielce, Kraków, Lublin, Łódź, Olsztyn, Opole, Poznań, Rzeszów, Szczecin, Warszawa i Wrocław. Dla kujawsko-pomorskiego wybrano Bydgoszcz, a dla lubuskiego Gorzów Wielkopolski. Drugimi stolicami tych województw są odpowiednio Toruń i Zielona Góra. Zobacz [urzędową listę](https://www.gov.pl/web/mswia/urzedy-wojewodzkie).
 
@@ -70,5 +79,3 @@ Kalendarz obejmuje dni faktycznie zwrócone przez API (maksymalnie 16 dni od dzi
 Data pozostaje wybrana po zmianie miasta lub odświeżeniu, o ile jest nadal dostępna. W innym przypadku aplikacja wybiera pierwszy dostępny dzień. Po zmianie miasta stare dane są usuwane, a opóźnione odpowiedzi dla poprzednich miast są pomijane.
 
 Testy obejmują wybór i anulowanie daty, zakres kalendarza, współrzędne wszystkich miast, długą nazwę miejscowości na ekranie 320 px oraz odpowiedzi sieciowe w odwrotnej kolejności.
-
-Katalog publikacji: `C:\Projects\Codex\sites\warszawa-pogoda`. Manifest `.openai/hosting.json` zachowuje identyfikator publicznego Sites. Po kompilacji zawartość `build/web` jest kopiowana do `dist`, a następnie wersja jest zapisywana i publikowana. Kopia do lokalnego uruchamiania jest w `C:\Projects\Codex\warsaw_weather` (skrypt `start.ps1`).
