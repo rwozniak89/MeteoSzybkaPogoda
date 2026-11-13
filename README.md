@@ -4,6 +4,8 @@ Prosta aplikacja **Dart + Flutter Web**, po polsku, z bieżącą pogodą i progn
 
 [Uruchom aplikację](https://warszawa-pogoda-radek.obszar-roboc-5333.chatgpt.site/)
 
+[Uruchom w GitHub Pages](https://rwozniak89.github.io/MeteoSzybkaPogoda/)
+
 Kod jest udostępniany na licencji [MIT](LICENSE). Gotowe wydania aplikacji można pobrać z sekcji [Releases](https://github.com/rwozniak89/MeteoSzybkaPogoda/releases).
 
 ## Zrzuty ekranu
