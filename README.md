@@ -4,6 +4,8 @@ Prosta aplikacja **Dart + Flutter Web**, po polsku, z bieżącą pogodą i progn
 
 [Uruchom aplikację](https://warszawa-pogoda-radek.obszar-roboc-5333.chatgpt.site/)
 
+Kod jest udostępniany na licencji [MIT](LICENSE). Gotowe wydania aplikacji można pobrać z sekcji [Releases](https://github.com/rwozniak89/MeteoSzybkaPogoda/releases).
+
 ## Zrzuty ekranu
 
 ### Komputer — 1440 px
@@ -55,6 +57,8 @@ flutter build web --release
 ```
 
 Wynik produkcyjny jest w `build/web`. Udostępnij zawartość przez serwer HTTP/HTTPS; otwieranie samego pliku `index.html` z dysku nie uruchomi aplikacji poprawnie. Publikowanie w podkatalogu wymaga `flutter build web --base-href /nazwa/`.
+
+Gałąź `main` jest automatycznie testowana, budowana i publikowana przez GitHub Actions w GitHub Pages.
 
 Testy sprawdzają odczyt danych, błędy API i sieci, brakujące pomiary, kody pogody, ponawianie, zachowanie danych przy awarii odświeżania, blokowanie jednoczesnych zapytań oraz układ przy szerokościach 320, 390, 768 i 1440 px. Testy używają danych przykładowych i nie odpytują API.
 

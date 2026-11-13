@@ -4,3 +4,7 @@
 *.iml
 build/
 coverage/
+
+# Lokalna konfiguracja i wynik publikacji w Sites.
+.openai/hosting.json
+dist/
